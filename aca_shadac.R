@@ -68,6 +68,7 @@ names(aca) <- c("fips", "location", "coverage_type", "year", "exp_date", "exp", 
                 "white_pct", "pop")
 
 write_csv(aca, "aca_2008_2014_clean2.csv")
+aca <- read_csv("aca_2008_2014_clean2.csv", col_types = cols(pop = col_number()))
 
 # filter dataset to just uninsured coverage stats
 unique(aca2$coverage_type)
@@ -171,6 +172,13 @@ coeftest(m4_medicaid, m4_medicaid.vcovCL)
 # exp                                1.0071e-02  3.3985e-03      2.9633  0.003288 **
 # exp                                2.3542e-02  4.6813e-03  5.0289e+00 8.517e-07 ***
 
+m5_medicaid <- lm(total_pct ~ exp + factor(location) * year + factor(year), data = aca_medicaid, weights = pop)
+coeftest(m5_medicaid)
+# exp                                     2.0255e-02  1.8991e-03 10.6655 < 2.2e-16 ***
+m5_medicaid.vcovCL <- cluster.vcov(m5_medicaid, aca_medicaid$location)
+coeftest(m5_medicaid, m5_medicaid.vcovCL)
+# exp                                     2.0255e-02  4.4661e-03     4.5353 8.949e-06 ***
+
 # medicaid
 # pct growth of count
 
@@ -223,6 +231,10 @@ coeftest(m4_medicaid, m4_medicaid.vcovCL)
 # exp                                5.1808e-02  1.4369e-02     3.6056 0.0003648 ***
 # exp                                1.1098e-01  2.0487e-02     5.4170 1.248e-07 ***
 
+
+
+
+
 # regression using aca_uninsured
 # pct of pop
 m1_unins <- lm(total_pct ~ exp, data = aca_unins)
@@ -260,6 +272,13 @@ m4_unins.vcovCL <- cluster.vcov(m4_unins, aca_unins$location)
 coeftest(m4_unins, m4_unins.vcovCL)
 # exp                               -2.3235e-03  3.0169e-03     -0.7702  0.441813
 # exp                               -1.1236e-02  6.7101e-03     -1.6745 0.0950838 .
+
+m5_unins <- lm(total_pct ~ exp + factor(location) * year + factor(year), data = aca_unins, weights = pop)
+coeftest(m5_unins)
+# exp                                    -1.1073e-02  1.9739e-03 -5.6095 5.386e-08 ***
+m5_unins.vcovCL <- cluster.vcov(m5_unins, aca_unins$location)
+coeftest(m5_unins, m5_unins.vcovCL)
+# exp                                    -1.1073e-02  6.6406e-03    -1.6674 0.0966862 . 
 
 # aca_unins, pct growth of count
 aca_unins$pct_growth_count <- 0
@@ -301,6 +320,11 @@ coeftest(m4_unins)
 m4_unins.vcovCL <- cluster.vcov(m4_unins, aca_unins$location)
 coeftest(m4_unins, m4_unins.vcovCL)
 # exp                               -4.8668e-02  1.3228e-02   -3.6792 0.0002774 ***
+
+
+
+
+
 
 # exploratory graphs 
 # aca_unins, percentage growth over time
@@ -380,6 +404,11 @@ ggplot(early_exp, aes(x = year, y = as.numeric(total_pct), group = location, col
 
 ggplot(early_exp, aes(x = year, y = as.numeric(total_count), group = location, color = location)) + geom_line() +
         ggtitle("medicaid, early exp states count of pop")
+
+
+
+
+
 
 # diff-in-diff regression with state and year fixed effects
 # medicaid, pct of pop, black
@@ -472,6 +501,14 @@ m4_priv.vcovCL <- cluster.vcov(m4_priv, aca_priv$location)
 coeftest(m4_priv, m4_priv.vcovCL)
 # exp                               -1.0346e-02  5.1841e-03     -1.9957 0.0468769 *  
 
+m5_priv <- lm(total_pct ~ exp + factor(location) * year + factor(year), data = aca_priv, weights = pop)
+coeftest(m5_priv)
+# exp                                    -8.2480e-03  1.8628e-03  -4.4277 1.427e-05 ***
+m5_priv.vcovCL <- cluster.vcov(m5_priv, aca_priv$location)
+coeftest(m5_priv, m5_priv.vcovCL)
+# exp                                    -8.2480e-03  4.2923e-03    -1.9216 0.0558023 .
+
+
 
 
 # individual insurance, pct of pop
@@ -495,31 +532,100 @@ aca_indiv %>% filter(year %in% c(2012, 2014)) %>%
 # 3         1 2012 0.1254769
 # 4         1 2014 0.1294508
 
+# diff_non_exp    diff_exp diff_in_diff
+# 1    0.0076468 0.003973846 -0.003672954
 
 m1_indiv <- lm(total_pct ~ exp, data = aca_indiv)
 coeftest(m1_indiv)
-# exp         0.0043165  0.0139272   0.3099   0.7568   
+# exp         -0.0057837  0.0060123  -0.962   0.3367     
 m1.vcovCL <- cluster.vcov(m1_indiv, aca_indiv$location)
 coeftest(m1_indiv, m1.vcovCL)
-# exp         0.0043165  0.0097733  0.4417    0.659 
+# exp         -0.0057837  0.0048210 -1.1997   0.2311 
 
 m2_indiv <- lm(total_pct ~ exp + factor(location) + factor(year), data = aca_indiv)
 coeftest(m2_indiv)
-# exp                               -1.0220e-02  2.7741e-03  -3.6842 0.0002723 ***
+# exp                               -0.00627862  0.00244589  -2.5670 0.0107446 *  
 m2_indiv.vcovCL <- cluster.vcov(m2_indiv, aca_indiv$location)
 coeftest(m2_indiv, m2_indiv.vcovCL)
-# exp                               -1.0220e-02  3.4823e-03 -2.9349e+00  0.003595 ** 
+# exp                               -6.2786e-03  3.3023e-03 -1.9013e+00  0.058227 . 
 
 m3_indiv <- lm(total_pct ~ exp + factor(year) + factor(location) * year, data = aca_indiv)
 coeftest(m3_indiv)
-# exp                                    -4.9414e-03  2.9802e-03  -1.6581 0.0985627 . 
+# exp                                    -4.8166e-03  2.5423e-03 -1.8946 0.0593050 .   
 m3_indiv.vcovCL <- cluster.vcov(m3_indiv, aca_indiv$location)
 coeftest(m3_indiv, m3_indiv.vcovCL)
-# exp                                    -4.9414e-03  3.9233e-03  -1.2595 0.2090244    
+# exp                                    -4.8166e-03  2.5184e-03 -1.9125e+00 0.0569534 .     
 
 m4_indiv <- lm(total_pct ~ exp + factor(location) + factor(year), data = aca_indiv, weights = pop)
 coeftest(m4_indiv)
-# exp                               -1.0346e-02  2.0834e-03  -4.9657 1.153e-06 ***
+# exp                               -0.00788384  0.00148474  -5.3099 2.143e-07 ***
 m4_indiv.vcovCL <- cluster.vcov(m4_indiv, aca_indiv$location)
 coeftest(m4_indiv, m4_indiv.vcovCL)
-# exp                               -1.0346e-02  5.1841e-03     -1.9957 0.0468769 *  
+# exp                               -7.8838e-03  1.9812e-03     -3.9794 8.677e-05 ***
+
+m5_indiv <- lm(total_pct ~ exp + factor(location) * year + factor(year), data = aca_indiv, weights = pop)
+coeftest(m5_indiv)
+# exp                                    -5.6967e-03  1.5218e-03  -3.7435 0.0002254 ***
+m5_indiv.vcovCL <- cluster.vcov(m5_indiv, aca_indiv$location)
+coeftest(m5_indiv, m5_indiv.vcovCL)
+# exp                                    -5.6967e-03  3.0508e-03    -1.8673  0.063037 .  
+
+
+# employer insurance, pct of pop
+aca_emp <- filter(aca, coverage_type == "Employer")
+
+agg_emp <- aca_emp %>% group_by(exp_dummy, year) %>% 
+        summarize(avg_total_pct = mean(as.numeric(total_pct)))
+
+ggplot(agg_emp, aes(x = year, y = avg_total_pct, group = exp_dummy, color = factor(exp_dummy))) + 
+        geom_line() + ggtitle("employer, pct of pop")
+
+aca_emp %>% filter(year %in% c(2012, 2014)) %>% 
+        group_by(exp_dummy, year) %>% summarize(avg_emp = mean(as.numeric(total_pct))) %>% ungroup() %>%
+        summarize(diff_non_exp = avg_emp[2] - avg_emp[1], 
+                  diff_exp = avg_emp[4] - avg_emp[3],
+                  diff_in_diff = diff_exp - diff_non_exp)
+
+# exp_dummy year   avg_emp
+# 1         0 2012 0.5686180
+# 2         0 2014 0.5657580
+# 3         1 2012 0.5969496
+# 4         1 2014 0.5895496
+
+# diff_non_exp diff_exp diff_in_diff
+# 1     -0.00286  -0.0074     -0.00454
+
+m1_emp <- lm(total_pct ~ exp, data = aca_emp)
+coeftest(m1_emp)
+# exp         -0.0023236  0.0130153  -0.1785   0.8584        
+m1.vcovCL <- cluster.vcov(m1_emp, aca_emp$location)
+coeftest(m1_emp, m1.vcovCL)
+# exp         -0.0023236  0.0090668 -0.2563   0.7979   
+
+m2_emp <- lm(total_pct ~ exp + factor(location) + factor(year), data = aca_emp)
+coeftest(m2_emp)
+# exp                               -4.4762e-03  3.0569e-03  -1.4643 0.1441739   
+m2_emp.vcovCL <- cluster.vcov(m2_emp, aca_emp$location)
+coeftest(m2_emp, m2_emp.vcovCL)
+# exp                               -4.4762e-03  3.4459e-03 -1.2990e+00     0.195 
+
+m3_emp <- lm(total_pct ~ exp + factor(year) + factor(location) * year, data = aca_emp)
+coeftest(m3_emp)
+# exp                                     1.5843e-03  3.2968e-03   0.4806 0.6312426  
+m3_emp.vcovCL <- cluster.vcov(m3_emp, aca_emp$location)
+coeftest(m3_emp, m3_emp.vcovCL)
+# exp                                     1.5844e-03  4.1366e-03  3.8300e-01 0.7020427 
+
+m4_emp <- lm(total_pct ~ exp + factor(location) + factor(year), data = aca_emp, weights = pop)
+coeftest(m4_emp)
+# exp                               -3.1391e-03  2.1563e-03  -1.4557   0.14651  
+m4_emp.vcovCL <- cluster.vcov(m4_emp, aca_emp$location)
+coeftest(m4_emp, m4_emp.vcovCL)
+# exp                               -3.1391e-03  5.6073e-03     -0.5598   0.57602  
+
+m5_emp <- lm(total_pct ~ exp + factor(location) * year + factor(year), data = aca_emp, weights = pop)
+coeftest(m5_emp)
+# exp                                    -1.7809e-03  1.8735e-03  -0.9506 0.3427316
+m5_emp.vcovCL <- cluster.vcov(m5_emp, aca_emp$location)
+coeftest(m5_emp, m5_emp.vcovCL)
+# exp                                    -1.7809e-03  3.0641e-03    -0.5812  0.561616  
