@@ -8,6 +8,7 @@ library(multiwayvcov)
 library(lmtest)
 library(ggplot2)
 library(scales)
+library(stargazer)
 
 
 # set wd
@@ -628,4 +629,19 @@ coeftest(m5_emp)
 # exp                                    -1.7809e-03  1.8735e-03  -0.9506 0.3427316
 m5_emp.vcovCL <- cluster.vcov(m5_emp, aca_emp$location)
 coeftest(m5_emp, m5_emp.vcovCL)
-# exp                                    -1.7809e-03  3.0641e-03    -0.5812  0.561616  
+# exp                                    -1.7809e-03  3.0641e-03    -0.5812  0.561616
+
+
+
+
+# medicaid table
+stargazer(coeftest(m2_medicaid, m2_medicaid.vcovCL), coeftest(m3_medicaid, m3_medicaid.vcovCL), 
+          coeftest(m4_medicaid, m4_medicaid.vcovCL), coeftest(m5_medicaid, m5_medicaid.vcovCL),
+          type = "html", dep.var.labels   = "Medicaid insurance coverage, % of state pop.",
+          omit = c("factor", "year"), out = "medicaid.html", covariate.labels = c("Medicaid expansion"),
+          add.lines = list(c("State trends", "No", "Yes", "No", "Yes"), 
+                           c("Pop. weights", "No", "No", "Yes", "Yes")), notes.align = "c", 
+          keep = "exp",
+        notes = "Notes: This table reports OLS regression DD estimates of expanded Medicaid insurance coverage on the percent of state population with Medicaid insurance coverage.  All models include state and year fixed effects.  Models (2) and (3) include state-specific linear time trends, and models (3) and (4) include weights by state population.  Clustered standard errors are reported in parenthesis.")
+
+
