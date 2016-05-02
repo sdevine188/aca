@@ -779,7 +779,71 @@ write_csv(co2_df, "co2_df.csv")
 # estimate average indiv
 avg_indiv <- mean(c(coefficients(m2_indiv)[2], coefficients(m3_indiv)[2], coefficients(m4_indiv)[2],
                   coefficients(m5_indiv)[2]))
+indiv_col <- data.frame("Individual" = c(coefficients(m2_indiv)[2], coefficients(m3_indiv)[2], coefficients(m4_indiv)[2],
+               coefficients(m5_indiv)[2], avg_indiv))
 
 # estimate average emp
 avg_emp <- mean(c(coefficients(m2_emp)[2], coefficients(m3_emp)[2], coefficients(m4_emp)[2],
                   coefficients(m5_emp)[2]))
+emp_col <- data.frame("Employer" = c(coefficients(m2_emp)[2], coefficients(m3_emp)[2], coefficients(m4_emp)[2],
+                                         coefficients(m5_emp)[2], avg_emp))
+# combine average indiv and emp
+indiv_emp <- cbind(indiv_col, emp_col)
+rownames(indiv_emp) <- c("Model 2", "Model 3", "Model 4", "Model 5", "Average")
+
+write_csv(indiv_emp, "indiv_emp.csv")
+
+# create descriptive statistics chart
+# chart 1: by state
+state_descrip <- aca %>% group_by(location) %>% summarize(
+        Expansion = mean(as.numeric(exp_dummy)), 
+        "Medicaid mean" = mean(as.numeric(total_pct[coverage_type == "Medicaid/CHIP"])),
+        "Uninsured mean" = mean(as.numeric(total_pct[coverage_type == "Uninsured"])),
+        "Private mean" = mean(as.numeric(total_pct[coverage_type == "Private"])),
+        "Invididual mean" = mean(as.numeric(total_pct[coverage_type == "Individual"])),
+        "Employer mean" = mean(as.numeric(total_pct[coverage_type == "Employer"])),
+        "Population mean" = mean(as.numeric(pop))
+        )
+
+write_csv(state_descrip, "state_descrip.csv")
+
+exp_descrip <- data.frame(aca %>% group_by(exp_dummy) %>% summarize(
+        "State count" = length(unique(location)),
+        "Medicaid mean" = mean(as.numeric(total_pct[coverage_type == "Medicaid/CHIP"])),
+        "Medicaid sd" = sd(as.numeric(total_pct[coverage_type == "Medicaid/CHIP"])),
+        "Uninsured mean" = mean(as.numeric(total_pct[coverage_type == "Uninsured"])),
+        "Uninsured sd" = sd(as.numeric(total_pct[coverage_type == "Uninsured"])),
+        "Private mean" = mean(as.numeric(total_pct[coverage_type == "Private"])),
+        "Private sd" = sd(as.numeric(total_pct[coverage_type == "Private"])),
+        "Invididual mean" = mean(as.numeric(total_pct[coverage_type == "Individual"])),
+        "Invididual sd" = sd(as.numeric(total_pct[coverage_type == "Individual"])),
+        "Employer mean" = mean(as.numeric(total_pct[coverage_type == "Employer"])),
+        "Employer sd" = sd(as.numeric(total_pct[coverage_type == "Employer"])),
+        "Population mean" = mean(as.numeric(pop)),
+        "Population sd" = sd(as.numeric(pop))
+        ))
+
+write_csv(exp_descrip, "exp_descrip.csv")
+
+# graph of state gdp
+gdp <- read_csv("bea_state_gdp_clean.csv")
+aca_gdp <- aca %>% filter(year == 2010, coverage_type == "Uninsured")
+aca_gdp <- left_join(aca_gdp, gdp, by = "fips")
+aca_gdp <- data.frame(aca_gdp)
+aca_gdp2 <- aca_gdp
+aca_gdp2 <- select(aca_gdp2, location, exp_dummy, X2000:X2014)
+aca_gdp2 <- melt(aca_gdp, id.vars = c("location", "exp_dummy"), 
+        measure.vars = c("X2000", "X2001", "X2002", "X2003", "X2004", "X2005", "X2006", "X2007",
+                         "X2008", "X2009", "X2010", "X2011", "X2012", "X2013", "X2014"), 
+        variable.name = "year", value.name = "gdp_growth")
+aca_gdp2$year <- str_replace(aca_gdp2$year, "X", "")
+
+agg_gdp <- aca_gdp2 %>% group_by(exp_dummy, year) %>% 
+        summarize(avg_gdp_growth = mean(as.numeric(gdp_growth)))
+
+ggplot(agg_gdp, aes(x = as.numeric(year), y = avg_gdp_growth, group = exp_dummy, color = factor(exp_dummy))) + geom_line()
+ggplot(agg_gdp, aes(x = as.numeric(year), y = avg_gdp_growth, group = factor(exp_dummy), color = factor(exp_dummy))) + 
+        geom_line() + ggtitle("Avg. state GDP growth") + 
+        ylab("Avg. GDP growth") + xlab("Year") + scale_x_continuous(breaks=seq(2000, 2014, 1)) +
+        theme_hc() + 
+        scale_colour_economist(name = "", labels = c("Non-expansion states", "Expansion states"))
