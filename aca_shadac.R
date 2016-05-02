@@ -9,6 +9,10 @@ library(lmtest)
 library(ggplot2)
 library(scales)
 library(stargazer)
+library(ggthemes)
+library(gridExtra)
+library(grid)
+library(gtable)
 
 
 # set wd
@@ -642,6 +646,140 @@ stargazer(coeftest(m2_medicaid, m2_medicaid.vcovCL), coeftest(m3_medicaid, m3_me
           add.lines = list(c("State trends", "No", "Yes", "No", "Yes"), 
                            c("Pop. weights", "No", "No", "Yes", "Yes")), notes.align = "c", 
           keep = "exp",
-        notes = "Notes: This table reports OLS regression DD estimates of expanded Medicaid insurance coverage on the percent of state population with Medicaid insurance coverage.  All models include state and year fixed effects.  Models (2) and (3) include state-specific linear time trends, and models (3) and (4) include weights by state population.  Clustered standard errors are reported in parenthesis.")
+        notes = "This table reports OLS regression DD estimates of expanded Medicaid insurance coverage on the percent of state population with Medicaid insurance coverage.  All models include state and year fixed effects.  Models (2) and (3) include state-specific linear time trends, and models (3) and (4) include weights by state population.  Standard errors clustered on states are reported in parenthesis.")
+
+# uninsured table
+stargazer(coeftest(m2_unins, m2_unins.vcovCL), coeftest(m3_unins, m3_unins.vcovCL), 
+          coeftest(m4_unins, m4_unins.vcovCL), coeftest(m5_unins, m5_unins.vcovCL),
+          type = "html", dep.var.labels   = "Uninsured, % of state pop.",
+          omit = c("factor", "year"), out = "unins.html", covariate.labels = c("Medicaid expansion"),
+          add.lines = list(c("State trends", "No", "Yes", "No", "Yes"), 
+                           c("Pop. weights", "No", "No", "Yes", "Yes")), notes.align = "c", 
+          keep = "exp",
+          notes = "This table reports OLS regression DD estimates of expanded Medicaid insurance coverage on the percent of state population without insurance coverage.  All models include state and year fixed effects.  Models (2) and (3) include state-specific linear time trends, and models (3) and (4) include weights by state population.  Standard errors clustered on states are reported in parenthesis.")
+
+# private insurance table
+stargazer(coeftest(m2_priv, m2_priv.vcovCL), coeftest(m3_priv, m3_priv.vcovCL), 
+          coeftest(m4_priv, m4_priv.vcovCL), coeftest(m5_priv, m5_priv.vcovCL),
+          type = "html", dep.var.labels   = "Private insurance, % of state pop.",
+          omit = c("factor", "year"), out = "priv.html", covariate.labels = c("Medicaid expansion"),
+          add.lines = list(c("State trends", "No", "Yes", "No", "Yes"), 
+                           c("Pop. weights", "No", "No", "Yes", "Yes")), notes.align = "c", 
+          keep = "exp",
+          notes = "This table reports OLS regression DD estimates of expanded Medicaid insurance coverage on the percent of state population with private insurance coverage.  All models include state and year fixed effects.  Models (2) and (3) include state-specific linear time trends, and models (3) and (4) include weights by state population.  Standard errors clustered on states are reported in parenthesis.")
+
+# individual insurance table
+stargazer(coeftest(m2_indiv, m2_indiv.vcovCL), coeftest(m3_indiv, m3_indiv.vcovCL), 
+          coeftest(m4_indiv, m4_indiv.vcovCL), coeftest(m5_indiv, m5_indiv.vcovCL),
+          type = "html", dep.var.labels   = "Individual-provided insurance, % of state pop.",
+          omit = c("factor", "year"), out = "indiv.html", covariate.labels = c("Medicaid expansion"),
+          add.lines = list(c("State trends", "No", "Yes", "No", "Yes"), 
+                           c("Pop. weights", "No", "No", "Yes", "Yes")), notes.align = "c", 
+          keep = "exp",
+          notes = "This table reports OLS regression DD estimates of expanded Medicaid insurance coverage on the percent of state population with individual-provided insurance coverage.  All models include state and year fixed effects.  Models (2) and (3) include state-specific linear time trends, and models (3) and (4) include weights by state population.  Standard errors clustered on states are reported in parenthesis.")
+
+# employer-provided insurance table
+stargazer(coeftest(m2_emp, m2_emp.vcovCL), coeftest(m3_emp, m3_emp.vcovCL), 
+          coeftest(m4_emp, m4_emp.vcovCL), coeftest(m5_emp, m5_emp.vcovCL),
+          type = "html", dep.var.labels   = "Employer-provided insurance, % of state pop.",
+          omit = c("factor", "year"), out = "emp.html", covariate.labels = c("Medicaid expansion"),
+          add.lines = list(c("State trends", "No", "Yes", "No", "Yes"), 
+                           c("Pop. weights", "No", "No", "Yes", "Yes")), notes.align = "c", 
+          keep = "exp",
+          notes = "This table reports OLS regression DD estimates of expanded Medicaid insurance coverage on the percent of state population with employer-provided insurance coverage.  All models include state and year fixed effects.  Models (2) and (3) include state-specific linear time trends, and models (3) and (4) include weights by state population.  Standard errors clustered on states are reported in parenthesis.")
+
+# graph medicaid
+agg_medicaid <- aca_medicaid %>% group_by(exp_dummy, year) %>% summarize(avg_pct_pop = mean(as.numeric(total_pct)))
+
+ggplot(agg_medicaid, aes(x = year, y = avg_pct_pop, group = factor(exp_dummy), color = factor(exp_dummy))) + 
+        geom_line() + ggtitle("Medicaid insurance coverage, avg. % of pop.") + 
+        ylab("Avg. % of pop.") + xlab("Year") + scale_x_continuous(breaks=seq(2008, 2014, 1)) +
+        theme_hc() + 
+        scale_colour_economist(name = "", labels = c("Non-expansion states", "Expansion states"))
+
+# graph unins
+agg_unins <- aca_unins %>% group_by(exp_dummy, year) %>% summarize(avg_pct_pop = mean(as.numeric(total_pct)))
+
+ggplot(agg_unins, aes(x = year, y = avg_pct_pop, group = factor(exp_dummy), color = factor(exp_dummy))) + 
+        geom_line() + ggtitle("Uninsured, avg. % of pop.") + 
+        ylab("Avg. % of pop.") + xlab("Year") + scale_x_continuous(breaks=seq(2008, 2014, 1)) +
+        theme_hc() + 
+        scale_colour_economist(name = "", labels = c("Non-expansion states", "Expansion states"))
+
+# graph priv
+agg_priv <- aca_priv %>% group_by(exp_dummy, year) %>% summarize(avg_pct_pop = mean(as.numeric(total_pct)))
+
+ggplot(agg_priv, aes(x = year, y = avg_pct_pop, group = factor(exp_dummy), color = factor(exp_dummy))) + 
+        geom_line() + ggtitle("Private insurance coverage, avg. % of pop.") + 
+        ylab("Avg. % of pop.") + xlab("Year") + scale_x_continuous(breaks=seq(2008, 2014, 1)) +
+        theme_hc() + 
+        scale_colour_economist(name = "", labels = c("Non-expansion states", "Expansion states"))
+
+# graph indiv
+agg_indiv <- aca_indiv %>% group_by(exp_dummy, year) %>% summarize(avg_pct_pop = mean(as.numeric(total_pct)))
+
+ggplot(agg_indiv, aes(x = year, y = avg_pct_pop, group = factor(exp_dummy), color = factor(exp_dummy))) + 
+        geom_line() + ggtitle("Individual-provided insurance coverage, avg. % of pop.") + 
+        ylab("Avg. % of pop.") + xlab("Year") + scale_x_continuous(breaks=seq(2008, 2014, 1)) +
+        theme_hc() + 
+        scale_colour_economist(name = "", labels = c("Non-expansion states", "Expansion states"))
+
+# graph emp
+agg_emp <- aca_emp %>% group_by(exp_dummy, year) %>% summarize(avg_pct_pop = mean(as.numeric(total_pct)))
+
+ggplot(agg_emp, aes(x = year, y = avg_pct_pop, group = factor(exp_dummy), color = factor(exp_dummy))) + 
+        geom_line() + ggtitle("Employer-provided insurance coverage, avg. % of pop.") + 
+        ylab("Avg. % of pop.") + xlab("Year") + scale_x_continuous(breaks=seq(2008, 2014, 1)) +
+        theme_hc() + 
+        scale_colour_economist(name = "", labels = c("Non-expansion states", "Expansion states"))
 
 
+
+# table of crowd-out calculations
+# broad calculation
+# for every x % rightly covered by medicaid, y % crowd out from private
+m2_co1 <- (coefficients(m2_medicaid)[2] + coefficients(m2_unins)[2]) / coefficients(m2_medicaid)[2]
+m3_co1 <- (coefficients(m3_medicaid)[2] + coefficients(m3_unins)[2]) / coefficients(m3_medicaid)[2]
+m4_co1 <- (coefficients(m4_medicaid)[2] + coefficients(m4_unins)[2]) / coefficients(m4_medicaid)[2]
+m5_co1 <- (coefficients(m5_medicaid)[2] + coefficients(m5_unins)[2]) / coefficients(m5_medicaid)[2]
+co1 <- mean(m2_co1, m3_co1, m4_co1, m5_co1)
+
+m2_co1_row <- c(coefficients(m2_medicaid)[2], coefficients(m2_unins)[2], m2_co1)
+m3_co1_row <- c(coefficients(m3_medicaid)[2], coefficients(m3_unins)[2], m3_co1)
+m4_co1_row <- c(coefficients(m4_medicaid)[2], coefficients(m4_unins)[2], m4_co1)
+m5_co1_row <- c(coefficients(m5_medicaid)[2], coefficients(m5_unins)[2], m5_co1)
+
+co1_df <- rbind(m2_co1_row, m3_co1_row, m4_co1_row, m5_co1_row)
+co1_df <- data.frame(co1_df)
+names(co1_df) <- c("Medicaid", "Uninsured", "Crowd-out ratio 1")
+row.names(co1_df) <- c("Model 2", "Model 3", "Model 4", "Model 5")
+
+write_csv(co1_df, "co1_df.csv")
+
+# narrow calculation
+# for every x % rightly covered by medicaid, x % crowd out from private
+m2_co2 <- coefficients(m2_priv)[2] / coefficients(m2_medicaid)[2]
+m3_co2 <- coefficients(m3_priv)[2] / coefficients(m3_medicaid)[2]
+m4_co2 <- coefficients(m4_priv)[2] / coefficients(m4_medicaid)[2]
+m5_co2 <- coefficients(m5_priv)[2] / coefficients(m5_medicaid)[2]
+co2 <- mean(m2_co2, m3_co2, m4_co2, m5_co2)
+
+m2_co2_row <- c(coefficients(m2_priv)[2], coefficients(m2_medicaid)[2], m2_co2)
+m3_co2_row <- c(coefficients(m3_priv)[2], coefficients(m3_medicaid)[2], m3_co2)
+m4_co2_row <- c(coefficients(m4_priv)[2], coefficients(m4_medicaid)[2], m4_co2)
+m5_co2_row <- c(coefficients(m5_priv)[2], coefficients(m5_medicaid)[2], m5_co2)
+
+co2_df <- rbind(m2_co2_row, m3_co2_row, m4_co2_row, m5_co2_row)
+co2_df <- data.frame(co2_df)
+names(co2_df) <- c("Private", "Medicaid", "Crowd-out ratio 1")
+row.names(co2_df) <- c("Model 2", "Model 3", "Model 4", "Model 5")
+
+write_csv(co2_df, "co2_df.csv")
+
+# estimate average indiv
+avg_indiv <- mean(c(coefficients(m2_indiv)[2], coefficients(m3_indiv)[2], coefficients(m4_indiv)[2],
+                  coefficients(m5_indiv)[2]))
+
+# estimate average emp
+avg_emp <- mean(c(coefficients(m2_emp)[2], coefficients(m3_emp)[2], coefficients(m4_emp)[2],
+                  coefficients(m5_emp)[2]))
